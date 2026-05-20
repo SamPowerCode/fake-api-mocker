@@ -56,3 +56,66 @@ def _load_config(
 
     all_prefixes.sort(key=len, reverse=True)
     return route_map, auth_map, all_prefixes
+
+
+def _check_auth(auth_config: dict, request: Request) -> bool:
+    if auth_config["type"] == "basic":
+        header = request.headers.get("Authorization", "")
+        if not header.startswith("Basic "):
+            return False
+        try:
+            decoded = base64.b64decode(header[6:]).decode()
+            username, _, password = decoded.partition(":")
+        except Exception:
+            return False
+        return username == auth_config["username"] and password == auth_config["password"]
+
+    if auth_config["type"] == "apikey":
+        return request.headers.get(auth_config["header"]) == auth_config["key"]
+
+    return False
+
+
+def create_app(config_path: Path) -> FastAPI:
+    route_map, auth_map, prefixes = _load_config(config_path)
+
+    app = FastAPI(title="Fake API Mocker")
+
+    @app.api_route(
+        "/{full_path:path}",
+        methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+    )
+    async def catch_all(full_path: str, request: Request) -> JSONResponse:
+        path = f"/{full_path}".rstrip("/") or "/"
+
+        matched_prefix = next(
+            (p for p in prefixes if path == p or path.startswith(p + "/")),
+            None,
+        )
+
+        if matched_prefix is not None and matched_prefix in auth_map:
+            auth_config = auth_map[matched_prefix]
+            if not _check_auth(auth_config, request):
+                headers = {}
+                if auth_config["type"] == "basic":
+                    headers["WWW-Authenticate"] = "Basic"
+                return JSONResponse(
+                    {"detail": "Unauthorized"}, status_code=401, headers=headers
+                )
+
+        method = request.method.upper()
+
+        if (method, path) in route_map:
+            status, body = route_map[(method, path)]
+            return JSONResponse(body, status_code=status)
+
+        for m, p in route_map:
+            if p == path:
+                return JSONResponse({"detail": "Method Not Allowed"}, status_code=405)
+
+        return JSONResponse(
+            {"detail": f"No mock configured for {method} {path}"},
+            status_code=404,
+        )
+
+    return app
