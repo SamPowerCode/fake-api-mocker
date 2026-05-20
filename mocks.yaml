@@ -1,0 +1,50 @@
+groups:
+  - name: payments-api
+    prefix: /payments
+    auth:
+      type: basic
+      username: alice
+      password: secret123
+    routes:
+      - path: /charge
+        method: POST
+        status: 200
+        response:
+          id: "ch_123"
+          status: "succeeded"
+          amount: 5000
+      - path: /charge/ch_123
+        method: GET
+        status: 200
+        response:
+          id: "ch_123"
+          amount: 5000
+          status: "succeeded"
+      - path: /transactions
+        method: GET
+        status: 200
+        response_file: responses/transactions.json
+
+  - name: weather-api
+    prefix: /weather
+    auth:
+      type: apikey
+      header: X-API-Key
+      key: my-secret-key
+    routes:
+      - path: /current
+        method: GET
+        status: 200
+        response:
+          temp: 72
+          condition: sunny
+          unit: fahrenheit
+
+  - name: health
+    prefix: /health
+    routes:
+      - path: /live
+        method: GET
+        status: 200
+        response:
+          status: ok

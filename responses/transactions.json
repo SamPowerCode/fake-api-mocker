@@ -1,0 +1,5 @@
+[
+  {"id": "tx_001", "amount": 1000, "currency": "USD", "status": "completed"},
+  {"id": "tx_002", "amount": 2500, "currency": "USD", "status": "pending"},
+  {"id": "tx_003", "amount": 750,  "currency": "EUR", "status": "completed"}
+]
