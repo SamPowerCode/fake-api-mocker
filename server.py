@@ -16,12 +16,17 @@ def _load_config(
     except Exception as e:
         sys.exit(f"Failed to load {config_path}: {e}")
 
+    if not isinstance(raw, dict):
+        sys.exit(f"{config_path}: expected a YAML mapping at the top level, got {type(raw).__name__}")
+
     route_map: dict[tuple[str, str], tuple[int, object]] = {}
     auth_map: dict[str, dict] = {}
     all_prefixes: list[str] = []
 
     for group in raw.get("groups", []):
         prefix = group["prefix"].rstrip("/")
+        if prefix in all_prefixes:
+            sys.exit(f"Duplicate group prefix: {prefix}")
         all_prefixes.append(prefix)
 
         if "auth" in group:
@@ -52,6 +57,8 @@ def _load_config(
                     f"Route {method} {full_path}: must have 'response' or 'response_file'"
                 )
 
+            if (method, full_path) in route_map:
+                sys.exit(f"Duplicate route: {method} {full_path}")
             route_map[(method, full_path)] = (status, body)
 
     all_prefixes.sort(key=len, reverse=True)

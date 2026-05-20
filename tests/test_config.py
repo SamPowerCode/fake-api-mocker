@@ -168,6 +168,13 @@ def test_invalid_yaml_exits(tmp_path):
         _load_config(config)
 
 
+def test_empty_yaml_exits(tmp_path):
+    config = tmp_path / "mocks.yaml"
+    config.write_text("")
+    with pytest.raises(SystemExit):
+        _load_config(config)
+
+
 def test_prefixes_sorted_longest_first(tmp_path):
     config = write_config(tmp_path, """
 groups:
