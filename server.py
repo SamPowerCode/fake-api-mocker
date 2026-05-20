@@ -121,4 +121,4 @@ def create_app(config_path: Path) -> FastAPI:
     return app
 
 
-app = create_app(Path("mocks.yaml"))
+app = create_app(Path(__file__).parent / "mocks.yaml")
